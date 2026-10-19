@@ -993,6 +993,76 @@ footer .disc{border-top:1px solid rgba(255,255,255,.1);padding-top:14px;font-siz
 })();
 </script>
 
+<!-- Bayaran online (Billplz) melalui /api di server yang sama; COD kekal melalui WhatsApp -->
+<script>
+(function(){
+  var send = document.getElementById('send'); if (!send) return;
+  var cfg = null, busy = false;
+  var EAST = ['Sabah','Sarawak','W.P. Labuan'];
+  var PRICE = {starter:10,b1:20,b2:40,b3:60,b5:80};
+  fetch('/api/config').then(function(r){ return r.ok ? r.json() : null; }).then(function(c){ cfg = c; refresh(); }).catch(function(){});
+
+  function val(id){ return ((document.getElementById(id)||{}).value||'').trim(); }
+  function pkg(){ var c = document.querySelector('input[name="pkg"]:checked'); return c ? c.value : 'b5'; }
+  function online(){ var c = document.querySelector('input[name="pay"]:checked'); return !!(c && /online/i.test(c.value)); }
+  function ship(){
+    if (!cfg) return null;
+    if ((cfg.shipping.free||[]).indexOf(pkg()) > -1) return 0;
+    var n = val('f-negeri'); if (!n) return null;
+    return EAST.indexOf(n) > -1 ? cfg.shipping.east : cfg.shipping.west;
+  }
+  function refresh(){
+    setTimeout(function(){
+      var sum = document.getElementById('sum'); if (!sum) return;
+      var rows = sum.querySelectorAll('div');
+      var s = ship(), p = PRICE[pkg()] || 0;
+      rows.forEach(function(r){
+        var label = (r.firstChild && r.firstChild.textContent) || '';
+        if (/Penghantaran/.test(label)) r.lastChild.textContent = s === null ? 'Pilih negeri' : (s === 0 ? 'PERCUMA' : 'RM' + s);
+        if (r.classList.contains('tot')) r.lastChild.textContent = s === null ? 'RM' + p + ' + pos' : 'RM' + (p + s);
+      });
+      var on = online() && cfg && cfg.online;
+      send.firstChild.textContent = on ? 'Bayar Online Sekarang (FPX / Kad) ' : 'Hantar Pesanan via WhatsApp ';
+      send.classList.toggle('btn-wa', !on);
+    }, 0);
+  }
+  document.addEventListener('change', refresh);
+  document.addEventListener('click', function(e){ if (e.target.closest('.pkg, #up-btn')) refresh(); });
+
+  function mark(f, ok){ var el = document.querySelector('[data-f="'+f+'"]'); if (el) el.classList.toggle('err', !ok); return ok; }
+  function valid(){
+    var ok = true, first = null;
+    [['nama', val('f-nama').length >= 3], ['tel', /^[0-9+\-\s]{9,15}$/.test(val('f-tel'))], ['alamat', val('f-alamat').length >= 8],
+     ['poskod', /^\d{5}$/.test(val('f-poskod'))], ['bandar', val('f-bandar').length >= 2], ['negeri', !!val('f-negeri')]]
+      .forEach(function(x){ if (!mark(x[0], x[1])) { ok = false; first = first || x[0]; } });
+    if (first) { var el = document.querySelector('[data-f="'+first+'"]'); el.scrollIntoView({behavior:'smooth', block:'center'}); }
+    return ok;
+  }
+
+  // capture phase: runs before the WhatsApp handler, and only takes over when Online is chosen
+  send.addEventListener('click', function(e){
+    if (!online() || !cfg || !cfg.online) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    if (busy || !valid()) return;
+    busy = true; var label = send.firstChild.textContent; send.firstChild.textContent = 'Menyambung ke Billplz… ';
+    var body = {pkg: pkg(), nama: val('f-nama'), tel: val('f-tel'), alamat: val('f-alamat'), poskod: val('f-poskod'), bandar: val('f-bandar'), negeri: val('f-negeri')};
+    if (window.track) track('AddPaymentInfo', {value: (PRICE[body.pkg]||0) + (ship()||0), currency: 'MYR'});
+    fetch('/api/order', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})
+      .then(function(r){ return r.json().then(function(j){ return {ok: r.ok, j: j}; }); })
+      .then(function(x){
+        if (x.ok && x.j.url) { location.href = x.j.url; return; }
+        throw new Error(x.j.error || 'Ralat');
+      })
+      .catch(function(err){
+        busy = false; send.firstChild.textContent = label;
+        var m = document.getElementById('pay-msg');
+        if (!m) { m = document.createElement('p'); m.id = 'pay-msg'; m.style.cssText = 'color:#dc2626;font-weight:700;text-align:center;margin-top:10px'; send.after(m); }
+        m.textContent = err.message + ' Anda juga boleh pilih COD dan hantar pesanan melalui WhatsApp.';
+      });
+  }, true);
+})();
+</script>
+
 <!-- Meta Pixel events -->
 <script>
 (function(){

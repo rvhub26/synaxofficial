@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Terima Kasih | SYNAX</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/logo-synax.jpeg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&family=Quicksand:wght@500;600;700&display=swap">
+<script>
+  var PIXEL_ID = ''; // sama dengan index.html
+  if (PIXEL_ID) {
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', PIXEL_ID); fbq('track', 'PageView');
+  }
+</script>
+<style>
+:root{--navy:#0b1624;--navy2:#10243a;--sky:#4cc4ec;--gold:#ffcf3d;--gold2:#ffb800;--ink:#0f1b2a;--muted:#566779;--ok:#16a34a;--bad:#dc2626;--wa:#25d366}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Quicksand',system-ui,sans-serif;font-weight:500;background:linear-gradient(180deg,var(--navy2),#070d16);color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px max(16px,env(safe-area-inset-left,0px))}
+.card{width:100%;max-width:460px;background:#fff;color:var(--ink);border-radius:22px;padding:30px 24px;text-align:center;box-shadow:0 24px 60px -20px rgba(0,0,0,.6)}
+.ic{width:84px;height:84px;margin:0 auto 16px;border-radius:50%;display:grid;place-items:center;font-size:42px}
+.ok .ic{background:#e7f8ee;box-shadow:0 0 0 8px #f3fcf6}
+.bad .ic{background:#fdecec;box-shadow:0 0 0 8px #fff6f6}
+h1{font-family:'Outfit',sans-serif;font-weight:900;font-size:27px;line-height:1.15;margin-bottom:10px}
+p{color:var(--muted);line-height:1.6;margin-bottom:12px}
+.box{background:#eff7fb;border-radius:14px;padding:14px;margin:16px 0;text-align:left;font-size:15px}
+.box div{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
+.box b{color:var(--ink)}
+.btn{display:block;margin-top:12px;padding:15px;border-radius:999px;font-family:'Outfit',sans-serif;font-weight:800;font-size:17px;text-decoration:none}
+.wa{background:var(--wa);color:#05361a}
+.gold{background:linear-gradient(180deg,#ffe07a,var(--gold) 45%,var(--gold2));color:var(--navy)}
+.logo{width:56px;height:56px;border-radius:14px;margin:0 auto 18px;display:block}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main class="card" id="card">
+  <img class="logo" src="assets/logo-synax.jpeg" alt="SYNAX">
+  <section id="ok" class="ok" hidden>
+    <div class="ic">✅</div>
+    <h1>Terima kasih, <span id="nm">pembayaran berjaya</span>!</h1>
+    <p>Pesanan anda sedang diproses. Kami akan hantar <b>tracking number</b> melalui WhatsApp dalam masa 1–2 hari bekerja.</p>
+    <div class="box">
+      <div><span>No. Order</span><b id="oid">-</b></div>
+      <div><span>Pakej</span><b id="opk">-</b></div>
+      <div><span>Jumlah dibayar</span><b id="oam">-</b></div>
+    </div>
+  </section>
+  <section id="bad" class="bad" hidden>
+    <div class="ic">⚠️</div>
+    <h1>Pembayaran belum berjaya</h1>
+    <p>Tiada caj dibuat, atau bayaran dibatalkan. Anda boleh cuba sekali lagi, atau pilih <b>COD</b> (bayar bila barang sampai).</p>
+    <a class="btn gold" href="/#order">Cuba Bayar Semula</a>
+  </section>
+  <a class="btn wa" id="wa" href="https://wa.me/60199255044" target="_blank" rel="noopener">💬 WhatsApp Kami</a>
+</main>
+<script>
+(function(){
+  var q = new URLSearchParams(location.search), id = q.get('order') || '', st = q.get('status');
+  function show(ok){ document.getElementById(ok ? 'ok' : 'bad').hidden = false; }
+  if (!id || st !== 'paid') { show(false); return; }
+  fetch('/api/order/' + encodeURIComponent(id)).then(function(r){ return r.json(); }).then(function(o){
+    if (o.status !== 'paid') { show(false); return; }
+    show(true);
+    document.getElementById('nm').textContent = o.nama || 'pembayaran berjaya';
+    document.getElementById('oid').textContent = o.order;
+    document.getElementById('opk').textContent = o.pakej;
+    document.getElementById('oam').textContent = 'RM' + o.jumlah;
+    document.getElementById('wa').href = 'https://wa.me/60199255044?text=' + encodeURIComponent('Hi SYNAX, saya dah bayar order ' + o.order + '.');
+    // Purchase hanya sekali bagi setiap order
+    try { if (window.fbq && !localStorage.getItem('px_' + o.order)) { fbq('track', 'Purchase', {value: o.jumlah, currency: 'MYR', content_name: 'SYNAX ' + o.pakej}); localStorage.setItem('px_' + o.order, '1'); } } catch(e) {}
+  }).catch(function(){ show(false); });
+})();
+</script>
+</body>
+</html>
