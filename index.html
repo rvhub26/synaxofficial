@@ -998,7 +998,7 @@ footer .disc{border-top:1px solid rgba(255,255,255,.1);padding-top:14px;font-siz
 (function(){
   var send = document.getElementById('send'); if (!send) return;
   var ERP = 'https://rolevisionerp.com/api/website/checkout';
-  var SALES_ID = '400', SALES_TOKEN = '16c638839cd1d320';   // saluran jualan dalam ERP (sama dengan synaxhq.site)
+  var SALES_ID = '7', SALES_TOKEN = 'eb300e1c52ffea57';   // ERP > Website Saya > Credential Website Saya
   var THANKS = location.origin + '/terima-kasih.html';
   // pakej website -> produk & kuantiti dalam ERP
   var MAP = {starter:{product:19, qty:1}, b1:{product:18, qty:1}, b2:{product:18, qty:2}, b3:{product:18, qty:3}, b5:{product:18, qty:5}};
@@ -1026,9 +1026,9 @@ footer .disc{border-top:1px solid rgba(255,255,255,.1);padding-top:14px;font-siz
       var on = online();
       sum.querySelectorAll('div').forEach(function(r){
         var label = (r.firstChild && r.firstChild.textContent) || '';
-        if (/Penghantaran/.test(label)) r.lastChild.textContent = on ? 'Dikira semasa bayaran' : 'Dari RM7 · disahkan via WhatsApp';
+        if (/Penghantaran/.test(label)) r.lastChild.textContent = on ? 'Dikira semasa bayaran' : 'Dikira semasa pengesahan';
       });
-      send.firstChild.textContent = on ? 'Bayar Online Sekarang (FPX / Kad) ' : 'Hantar Pesanan via WhatsApp ';
+      send.firstChild.textContent = on ? 'Bayar Online Sekarang (FPX / Kad) ' : 'Sahkan Pesanan COD ';
       send.classList.toggle('btn-wa', !on);
     }, 0);
   }
@@ -1048,31 +1048,36 @@ footer .disc{border-top:1px solid rgba(255,255,255,.1);padding-top:14px;font-siz
 
   // capture phase: runs before the WhatsApp handler, and only takes over when Online is chosen
   send.addEventListener('click', function(e){
-    if (!online() || !cfg || !cfg.online) return;
     e.preventDefault(); e.stopImmediatePropagation();
     if (busy || !valid()) return;
-    busy = true; var label = send.firstChild.textContent; send.firstChild.textContent = 'Menyambung ke Billplz… ';
+    var isOnline = online();
+    busy = true; var label = send.firstChild.textContent; send.firstChild.textContent = isOnline ? 'Menyambung ke Billplz… ' : 'Menghantar pesanan… ';
     var p = pkg(), m = MAP[p] || MAP.b5, negeri = val('f-negeri');
+    var pakej = ((document.getElementById('st-name')||{}).textContent || '').replace(/^·\s*/, '');
     var body = Object.assign({
       name: val('f-nama'), phone: val('f-tel').replace(/[\s-]/g,''), address: val('f-alamat'), postcode: val('f-poskod'),
       district: val('f-bandar'), state: STATE[negeri] || negeri, product_id: m.product, quantity: m.qty,
-      payment_method: 'online', sales_id: SALES_ID, sales_token: SALES_TOKEN, redirect_url: THANKS
+      payment_method: isOnline ? 'online' : 'cod', sales_id: SALES_ID, sales_token: SALES_TOKEN, redirect_url: THANKS
     }, attr);
     if (window.track) track('AddPaymentInfo', {value: PRICE[p] || 0, currency: 'MYR'});
     fetch(ERP, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})
       .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ return {ok: r.ok, j: j}; }); })
       .then(function(x){
         if (x.ok && x.j.payment_url) {
-          try { sessionStorage.setItem('synax_last_order', JSON.stringify({id: x.j.pending_id, amount: x.j.amount, pakej: (document.getElementById('st-name')||{}).textContent || ''})); } catch(e) {}
+          try { sessionStorage.setItem('synax_last_order', JSON.stringify({id: x.j.pending_id, amount: x.j.amount, pakej: pakej})); } catch(e) {}
           location.href = x.j.payment_url; return;
         }
-        throw new Error(x.j.error || 'Gagal sambung ke sistem bayaran.');
+        if (x.ok && x.j.order_id) {
+          try { sessionStorage.setItem('synax_last_order', JSON.stringify({id: x.j.order_id, amount: PRICE[p] || 0, pakej: pakej, cod: true})); } catch(e) {}
+          location.href = THANKS + '?cod=1&order=' + encodeURIComponent(x.j.order_id); return;
+        }
+        throw new Error(x.j.error || 'Gagal sambung ke sistem pesanan.');
       })
       .catch(function(err){
         busy = false; send.firstChild.textContent = label;
         var m = document.getElementById('pay-msg');
         if (!m) { m = document.createElement('p'); m.id = 'pay-msg'; m.style.cssText = 'color:#dc2626;font-weight:700;text-align:center;margin-top:10px'; send.after(m); }
-        m.textContent = err.message + ' Anda juga boleh pilih COD dan hantar pesanan melalui WhatsApp.';
+        m.textContent = err.message + ' Sila cuba lagi, atau WhatsApp kami di 019-925 5044.';
       });
   }, true);
 })();

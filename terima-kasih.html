@@ -62,11 +62,17 @@ p{color:var(--muted);line-height:1.6;margin-bottom:12px}
 <script>
 (function(){
   // Billplz menghantar pelanggan ke sini dengan billplz[id], billplz[paid], billplz[paid_at]
-  var q = new URLSearchParams(location.search), bill = q.get('billplz[id]') || '', paid = q.get('billplz[paid]') === 'true';
+  // COD datang dengan ?cod=1&order=<id ERP>
+  var q = new URLSearchParams(location.search), cod = q.get('cod') === '1';
+  var bill = q.get('billplz[id]') || (cod ? q.get('order') : '') || '', paid = cod || q.get('billplz[paid]') === 'true';
   var o = {}; try { o = JSON.parse(sessionStorage.getItem('synax_last_order') || '{}'); } catch(e) {}
   document.getElementById(paid ? 'ok' : 'bad').hidden = false;
   if (!paid) return;
-  document.getElementById('nm').textContent = 'pembayaran berjaya';
+  document.getElementById('nm').textContent = cod ? 'pesanan COD diterima' : 'pembayaran berjaya';
+  if (cod) {
+    document.querySelector('#ok p').innerHTML = 'Pesanan anda dah masuk ke sistem kami. <b>Bayar tunai kepada rider</b> bila barang sampai. Kami akan WhatsApp untuk sahkan alamat dan beri <b>tracking number</b>.';
+    document.querySelector('#oam').previousElementSibling.textContent = 'Jumlah (tidak termasuk pos)';
+  }
   document.getElementById('oid').textContent = o.id ? ('#' + o.id) : (bill || '-');
   document.getElementById('opk').textContent = (o.pakej || '').replace(/^·\s*/, '') || 'SYNAX';
   document.getElementById('oam').textContent = typeof o.amount === 'number' ? 'RM' + (o.amount > 500 ? (o.amount / 100).toFixed(2) : o.amount) : '-';
