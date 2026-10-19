@@ -61,20 +61,26 @@ p{color:var(--muted);line-height:1.6;margin-bottom:12px}
 </main>
 <script>
 (function(){
-  var q = new URLSearchParams(location.search), id = q.get('order') || '', st = q.get('status');
-  function show(ok){ document.getElementById(ok ? 'ok' : 'bad').hidden = false; }
-  if (!id || st !== 'paid') { show(false); return; }
-  fetch('/api/order/' + encodeURIComponent(id)).then(function(r){ return r.json(); }).then(function(o){
-    if (o.status !== 'paid') { show(false); return; }
-    show(true);
-    document.getElementById('nm').textContent = o.nama || 'pembayaran berjaya';
-    document.getElementById('oid').textContent = o.order;
-    document.getElementById('opk').textContent = o.pakej;
-    document.getElementById('oam').textContent = 'RM' + o.jumlah;
-    document.getElementById('wa').href = 'https://wa.me/60199255044?text=' + encodeURIComponent('Hi SYNAX, saya dah bayar order ' + o.order + '.');
-    // Purchase hanya sekali bagi setiap order
-    try { if (window.fbq && !localStorage.getItem('px_' + o.order)) { fbq('track', 'Purchase', {value: o.jumlah, currency: 'MYR', content_name: 'SYNAX ' + o.pakej}); localStorage.setItem('px_' + o.order, '1'); } } catch(e) {}
-  }).catch(function(){ show(false); });
+  // Billplz menghantar pelanggan ke sini dengan billplz[id], billplz[paid], billplz[paid_at]
+  var q = new URLSearchParams(location.search), bill = q.get('billplz[id]') || '', paid = q.get('billplz[paid]') === 'true';
+  var o = {}; try { o = JSON.parse(sessionStorage.getItem('synax_last_order') || '{}'); } catch(e) {}
+  document.getElementById(paid ? 'ok' : 'bad').hidden = false;
+  if (!paid) return;
+  document.getElementById('nm').textContent = 'pembayaran berjaya';
+  document.getElementById('oid').textContent = o.id ? ('#' + o.id) : (bill || '-');
+  document.getElementById('opk').textContent = (o.pakej || '').replace(/^·\s*/, '') || 'SYNAX';
+  document.getElementById('oam').textContent = typeof o.amount === 'number' ? 'RM' + (o.amount > 500 ? (o.amount / 100).toFixed(2) : o.amount) : '-';
+  document.getElementById('wa').href = 'https://wa.me/60199255044?text=' + encodeURIComponent('Hi SYNAX, saya dah bayar online. No. bil: ' + bill + (o.id ? ' / order #' + o.id : '') + '.');
+  // Purchase hanya sekali bagi setiap bil
+  try {
+    var key = 'px_' + (bill || o.id);
+    if (window.fbq && !localStorage.getItem(key)) {
+      var v = typeof o.amount === 'number' ? (o.amount > 500 ? o.amount / 100 : o.amount) : 0;
+      fbq('track', 'Purchase', {value: v, currency: 'MYR', content_name: 'SYNAX ' + (o.pakej || '')});
+      localStorage.setItem(key, '1');
+    }
+  } catch(e) {}
+  try { history.replaceState(null, '', location.pathname); } catch(e) {}
 })();
 </script>
 </body>
