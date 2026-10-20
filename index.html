@@ -1067,9 +1067,12 @@ footer .disc{border-top:1px solid rgba(255,255,255,.1);padding-top:14px;font-siz
           try { sessionStorage.setItem('synax_last_order', JSON.stringify({id: x.j.pending_id, amount: x.j.amount, pakej: pakej})); } catch(e) {}
           location.href = x.j.payment_url; return;
         }
-        if (x.ok && x.j.order_id) {
-          try { sessionStorage.setItem('synax_last_order', JSON.stringify({id: x.j.order_id, amount: PRICE[p] || 0, pakej: pakej, cod: true})); } catch(e) {}
-          location.href = THANKS + '?cod=1&order=' + encodeURIComponent(x.j.order_id); return;
+        // COD: ERP pulangkan order_id (terus jadi order) atau pending_id + status "received" (menunggu semakan admin)
+        var codId = x.j.order_id || x.j.pending_id;
+        if (x.ok && codId) {
+          var amt = typeof x.j.amount === 'number' ? x.j.amount : (PRICE[p] || 0);
+          try { sessionStorage.setItem('synax_last_order', JSON.stringify({id: codId, amount: amt, withShip: typeof x.j.amount === 'number', pakej: pakej, cod: true})); } catch(e) {}
+          location.href = THANKS + '?cod=1&order=' + encodeURIComponent(codId); return;
         }
         throw new Error(x.j.error || 'Gagal sambung ke sistem pesanan.');
       })

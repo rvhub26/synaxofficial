@@ -71,7 +71,7 @@ p{color:var(--muted);line-height:1.6;margin-bottom:12px}
   document.getElementById('nm').textContent = cod ? 'pesanan COD diterima' : 'pembayaran berjaya';
   if (cod) {
     document.querySelector('#ok p').innerHTML = 'Pesanan anda dah masuk ke sistem kami. <b>Bayar tunai kepada rider</b> bila barang sampai. Kami akan WhatsApp untuk sahkan alamat dan beri <b>tracking number</b>.';
-    document.querySelector('#oam').previousElementSibling.textContent = 'Jumlah (tidak termasuk pos)';
+    document.querySelector('#oam').previousElementSibling.textContent = o.withShip ? 'Jumlah COD (termasuk pos)' : 'Jumlah (tidak termasuk pos)';
   }
   document.getElementById('oid').textContent = o.id ? ('#' + o.id) : (bill || '-');
   document.getElementById('opk').textContent = (o.pakej || '').replace(/^·\s*/, '') || 'SYNAX';
