@@ -1036,6 +1036,43 @@ footer .disc{border-top:1px solid rgba(255,255,255,.1);padding-top:14px;font-siz
   document.addEventListener('change', refresh);
   document.addEventListener('click', function(e){ if (e.target.closest('.pkg, #up-btn')) refresh(); });
 
+  // Abandoned cart: hantar apa yang dah diisi ke ERP "Prospect Saya" (sama seperti synaxhq.site)
+  var PROSPECT = 'https://rolevisionerp.com/api/website/prospect', lastSent = '', ptimer;
+  function sessionId(){
+    try {
+      var s = sessionStorage.getItem('synax_session_id');
+      if (!s) { s = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2); sessionStorage.setItem('synax_session_id', s); }
+      return s;
+    } catch(e) { return 'nosession-' + Date.now(); }
+  }
+  function sendProspect(){
+    var phone = val('f-tel').replace(/[\s-]/g,'').replace(/^\+/,''), name = val('f-nama');
+    if (phone.length < 7 && name.length < 2) return;
+    var m = MAP[pkg()] || MAP.b5, negeri = val('f-negeri');
+    var d = {session_id: sessionId()};
+    if (phone.length >= 7) d.phone = phone;
+    if (name) d.name = name;
+    if (val('f-alamat')) d.address = val('f-alamat');
+    if (val('f-poskod')) d.postcode = val('f-poskod');
+    if (val('f-bandar')) d.district = val('f-bandar');
+    if (negeri) d.state = STATE[negeri] || negeri;
+    d.product_id = m.product; d.quantity = m.qty; d.source = 'synaxofficial.com';
+    var body = JSON.stringify(Object.assign(d, attr, {sales_id: SALES_ID, sales_token: SALES_TOKEN}));
+    if (body === lastSent) return;
+    lastSent = body;
+    if (!(navigator.sendBeacon && navigator.sendBeacon(PROSPECT, body))) {
+      fetch(PROSPECT, {method:'POST', headers:{'Content-Type':'application/json'}, body: body, keepalive: true}).catch(function(){});
+    }
+  }
+  var form = document.getElementById('form');
+  if (form) {
+    form.addEventListener('input', function(){ clearTimeout(ptimer); ptimer = setTimeout(sendProspect, 1500); });
+    form.addEventListener('change', function(){ clearTimeout(ptimer); ptimer = setTimeout(sendProspect, 800); });
+  }
+  // hantar keadaan terakhir bila pelanggan tinggalkan page
+  document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') { clearTimeout(ptimer); sendProspect(); } });
+  window.addEventListener('pagehide', function(){ clearTimeout(ptimer); sendProspect(); });
+
   function mark(f, ok){ var el = document.querySelector('[data-f="'+f+'"]'); if (el) el.classList.toggle('err', !ok); return ok; }
   function valid(){
     var ok = true, first = null;
