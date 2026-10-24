@@ -398,14 +398,17 @@ footer .contact b{color:var(--on-dark)}
 footer .disc{border-top:1px solid rgba(255,255,255,.1);padding-top:14px;font-size:12px;line-height:1.5}
 
 /* sticky bar + wa float */
-.sticky{position:fixed;left:0;right:0;bottom:0;z-index:20;pointer-events:none}
+.sticky{position:fixed;left:0;right:0;bottom:0;z-index:20;pointer-events:none;transform:translateY(115%);transition:transform .4s cubic-bezier(.2,.8,.2,1)}
+/* the bar slides up only once the hero "Saya Nak Cuba SYNAX" button has been scrolled past */
+body.show-sticky .sticky{transform:none}
+body:not(.show-sticky) .wa-float{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 .sticky .in{max-width:var(--maxw);margin:0 auto;background:var(--white);border-top:1px solid var(--line);box-shadow:0 -10px 30px -12px rgba(8,30,56,.3);display:flex;align-items:center;gap:12px;pointer-events:auto;padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .sticky .info{flex:1;min-width:0;line-height:1.25}
 .sticky .info small{display:block;font-size:11px;font-weight:800;color:var(--violet);letter-spacing:.04em}
 .sticky .info b{font-family:var(--f-head);font-size:17px}
 .sticky .info span{font-size:12.5px;color:var(--muted)}
 .sticky .btn{width:auto;padding:12px 20px;font-size:16px;box-shadow:0 6px 0 -2px #c98a00}
-.wa-float{position:fixed;z-index:21;right:max(16px,calc((100vw - var(--maxw))/2 + 16px));bottom:calc(92px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;background:var(--wa);display:grid;place-items:center;box-shadow:0 10px 24px -6px rgba(37,211,102,.7)}
+.wa-float{position:fixed;z-index:21;right:max(16px,calc((100vw - var(--maxw))/2 + 16px));bottom:calc(92px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;background:var(--wa);display:grid;place-items:center;box-shadow:0 10px 24px -6px rgba(37,211,102,.7);transition:bottom .4s cubic-bezier(.2,.8,.2,1)}
 .wa-float svg{width:30px;height:30px;fill:var(--white)}
 
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
@@ -448,7 +451,17 @@ footer .disc{border-top:1px solid rgba(255,255,255,.1);padding-top:14px;font-siz
       <span class="stars" aria-label="4.9 bintang">★★★★★</span><span>4.9</span><span class="dot"></span><span>200K unit terjual</span><span class="dot"></span><span>40,000+ testimoni</span>
     </div>
 
-    <a class="btn pulse" href="#pakej">Saya Nak Cuba SYNAX <span class="arr">→</span></a>
+    <a class="btn pulse" id="hero-cta" href="#pakej">Saya Nak Cuba SYNAX <span class="arr">→</span></a>
+    <script>
+    (function(){
+      var cta = document.getElementById('hero-cta');
+      if (!cta || !('IntersectionObserver' in window)) { document.body.classList.add('show-sticky'); return; }
+      new IntersectionObserver(function(es){
+        var e = es[0];
+        document.body.classList.toggle('show-sticky', !e.isIntersecting && e.boundingClientRect.top < 0);
+      }).observe(cta);
+    })();
+    </script>
     <span class="btn-sub">Mula RM10 · COD tersedia · Pemulangan percuma 30 hari</span>
 
     <div class="trust">
