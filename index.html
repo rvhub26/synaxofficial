@@ -269,6 +269,19 @@ h3{font-size:19px;font-weight:700}
 .rail figure{flex:none;width:72%;scroll-snap-align:center;background:var(--white);border-radius:var(--r-sm);padding:8px;box-shadow:var(--shadow);border:1px solid var(--line)}
 .rail figure img{border-radius:10px;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top}
 .rail figcaption{font-size:12px;color:var(--muted);padding:8px 4px 2px;font-weight:700}
+/* desktop controls for the testimonial rail: arrows + mouse drag */
+.rail-wrap{position:relative}
+.rail-nav{display:none;position:absolute;top:42%;z-index:2;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--white);color:var(--ink,#0f1b2a);font-size:28px;line-height:1;cursor:pointer;box-shadow:var(--shadow);align-items:center;justify-content:center;padding:0 0 3px}
+.rail-nav:hover{transform:scale(1.08)}
+.rail-nav.prev{left:-6px}.rail-nav.next{right:-6px}
+.rail.drag{scroll-snap-type:none;cursor:grabbing;user-select:none}
+.rail img{-webkit-user-drag:none}
+.hint-mouse{display:none}
+@media (hover:hover) and (pointer:fine){
+  .rail-nav{display:flex}
+  .rail{cursor:grab}
+  .hint-touch{display:none}.hint-mouse{display:inline}
+}
 .rv-list{display:flex;flex-direction:column;gap:12px;margin-top:18px}
 .rv{background:var(--white);border:1px solid var(--line);border-radius:var(--r-sm);padding:16px;box-shadow:var(--shadow)}
 .rv .who{display:flex;align-items:center;gap:10px;margin-bottom:8px}
@@ -585,6 +598,9 @@ body:not(.show-sticky) .wa-float{bottom:calc(20px + env(safe-area-inset-bottom,0
       <span class="big">4.9</span>
       <div><div class="stars">★★★★★</div><span class="small">40,000+ testimoni pelanggan</span></div>
     </div>
+    <div class="rail-wrap">
+    <button type="button" class="rail-nav prev" id="rail-prev" aria-label="Testimoni sebelum">‹</button>
+    <button type="button" class="rail-nav next" id="rail-next" aria-label="Testimoni seterusnya">›</button>
     <div class="rail" id="rail" tabindex="0" aria-label="Tangkap layar testimoni, bergerak sendiri. Sentuh untuk berhenti.">
       <figure><img src="assets/3.webp" alt="Testimoni WhatsApp: anak lebih rajin buat homework" loading="lazy"><figcaption>💬 Testimoni WhatsApp</figcaption></figure>
       <figure><img src="assets/5.webp" alt="Testimoni WhatsApp: anak bangun pagi dan minat ke sekolah" loading="lazy"><figcaption>💬 Testimoni WhatsApp</figcaption></figure>
@@ -594,7 +610,8 @@ body:not(.show-sticky) .wa-float{bottom:calc(20px + env(safe-area-inset-bottom,0
       <figure><img src="assets/testimonials/t3.webp" alt="Ulasan pelanggan dengan gambar produk" loading="lazy"><figcaption>⭐ Ulasan pelanggan</figcaption></figure>
       <figure><img src="assets/testimonials/t4.webp" alt="Ulasan pelanggan dengan gambar produk" loading="lazy"><figcaption>⭐ Ulasan pelanggan</figcaption></figure>
     </div>
-    <p class="small tc">👆 Tekan &amp; tahan untuk berhenti · leret untuk lihat lagi</p>
+    </div>
+    <p class="small tc"><span class="hint-touch">👆 Tekan &amp; tahan untuk berhenti · leret untuk lihat lagi</span><span class="hint-mouse">🖱️ Tekan ‹ › atau klik &amp; seret untuk lihat lagi</span></p>
     <div class="rv-list">
       <div class="rv"><div class="who"><span class="av">N</span><div><b>N**1</b><small>Item: 2 Botol</small></div><span class="st">★★★★★</span></div><p>“Anak kurang pelat, mudah disuruh selepas guna SYNAX.”</p><span class="ver">✔ Ulasan Sebenar</span></div>
       <div class="rv"><div class="who"><span class="av">S</span><div><b>S**h K**e</b><small>Item: 2 Botol</small></div><span class="st">★★★★★</span></div><p>“Anak mudah bangun pagi dan lebih fokus semasa cikgu mengajar.”</p><span class="ver">✔ Ulasan Sebenar</span></div>
@@ -894,7 +911,7 @@ body:not(.show-sticky) .wa-float{bottom:calc(20px + env(safe-area-inset-bottom,0
   // testimonials: drift slowly to the left forever, pause while touched/hovered, resume 2.5s after
   (function(){
     var rail = $('rail'); if(!rail) return;
-    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches; // no auto-drift, but arrows/drag still work
     // duplicate the cards once so the loop is seamless
     var n = rail.children.length;
     [].slice.call(rail.children).forEach(function(f){ var c = f.cloneNode(true); c.setAttribute('aria-hidden','true'); rail.appendChild(c); });
@@ -905,9 +922,48 @@ body:not(.show-sticky) .wa-float{bottom:calc(20px + env(safe-area-inset-bottom,0
     ['pointerdown','touchstart','mouseenter','focusin'].forEach(function(e){ rail.addEventListener(e, hold, {passive:true}); });
     ['pointerup','touchend','touchcancel','mouseleave','focusout'].forEach(function(e){ rail.addEventListener(e, release, {passive:true}); });
     rail.addEventListener('wheel', function(){ hold(); release(); }, {passive:true});
+    // desktop: arrow buttons move one card; wrap around using the duplicated half
+    function half(){ return rail.children[n].offsetLeft - rail.children[0].offsetLeft; }
+    function go(dir){
+      hold();
+      var w = rail.children[0].offsetWidth + 12, h = half();
+      if (dir < 0 && rail.scrollLeft < w) rail.scrollLeft += h;
+      if (dir > 0 && rail.scrollLeft > h) rail.scrollLeft -= h;
+      // own short tween (snap off while moving) so it behaves the same in every browser
+      var from = rail.scrollLeft, to = from + dir * w, t0 = Date.now(), dur = 350;
+      rail.classList.add('drag');
+      (function tick(){
+        var k = Math.min(1, (Date.now() - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+        rail.scrollLeft = from + (to - from) * e;
+        if (k < 1) setTimeout(tick, 16); else { rail.classList.remove('drag'); release(); }
+      })();
+    }
+    var pv = $('rail-prev'), nx = $('rail-next');
+    if (pv) pv.addEventListener('click', function(){ go(-1); });
+    if (nx) nx.addEventListener('click', function(){ go(1); });
+    // desktop: click and drag with the mouse
+    var dragX = null, startLeft = 0, moved = false;
+    rail.addEventListener('pointerdown', function(e){
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      dragX = e.clientX; startLeft = rail.scrollLeft; moved = false;
+      rail.classList.add('drag');
+    });
+    window.addEventListener('pointermove', function(e){
+      if (dragX === null) return;
+      var dx = e.clientX - dragX; if (Math.abs(dx) > 4) moved = true;
+      var h = half(), left = startLeft - dx;
+      if (left < 0) { left += h; startLeft += h; }
+      if (left > h) { left -= h; startLeft -= h; }
+      rail.scrollLeft = left;
+    });
+    window.addEventListener('pointerup', function(){
+      if (dragX === null) return;
+      dragX = null; rail.classList.remove('drag'); release();
+    });
+    rail.addEventListener('click', function(e){ if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
     function step(t){
       var dt = last ? Math.min(t - last, 64) : 16; last = t;
-      if(!paused && !document.hidden){
+      if(!still && !paused && !document.hidden){
         var half = rail.children[n].offsetLeft - rail.children[0].offsetLeft;
         pos += speed * dt;
         if(pos >= half) pos -= half;
