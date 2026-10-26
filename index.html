@@ -704,7 +704,7 @@ body:not(.show-sticky) .wa-float{bottom:calc(20px + env(safe-area-inset-bottom,0
       <p class="step"><i>1</i>Pilih pakej</p>
       <div id="opts"></div>
 
-      <p class="step"><i>2</i>Maklumat penghantaran</p>
+      <p class="step" id="step-ship" style="scroll-margin-top:20px"><i>2</i>Maklumat penghantaran</p>
       <div class="field" data-f="nama"><label for="f-nama">Nama penuh</label><input id="f-nama" autocomplete="name" placeholder="Contoh: Siti Aminah"><span class="msg">Sila isi nama penuh.</span></div>
       <div class="field" data-f="tel"><label for="f-tel">No. telefon (WhatsApp)</label><input id="f-tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="Contoh: 012-3456789"><span class="msg">Sila isi nombor telefon yang sah.</span></div>
       <div class="field" data-f="alamat"><label for="f-alamat">Alamat penuh</label><textarea id="f-alamat" rows="2" autocomplete="street-address" placeholder="No. rumah, jalan, taman"></textarea><span class="msg">Sila isi alamat.</span></div>
@@ -807,10 +807,23 @@ body:not(.show-sticky) .wa-float{bottom:calc(20px + env(safe-area-inset-bottom,0
 <div class="sticky">
   <div class="in">
     <div class="info"><small>🔥 PROMOSI OKTOBER</small><b id="st-price">Dari RM10</b> <span id="st-name">· Set Percubaan</span></div>
-    <a class="btn" href="#order">Order Sekarang</a>
+    <a class="btn" href="#order" id="st-btn">Order Sekarang</a>
   </div>
 </div>
 
+<script>
+// Sticky "Order Sekarang": kalau pelawat dah berada di borang, terus bawa ke maklumat penghantaran
+(function(){
+  var b = document.getElementById('st-btn'), o = document.getElementById('order'), s = document.getElementById('step-ship');
+  if (!b || !o || !s) return;
+  b.addEventListener('click', function(e){
+    if (o.getBoundingClientRect().top < window.innerHeight * 0.5) {
+      e.preventDefault();
+      s.scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+  });
+})();
+</script>
 <script>
 (function(){
   var WA = '60199255044';
