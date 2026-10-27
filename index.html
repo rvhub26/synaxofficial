@@ -269,6 +269,20 @@ h3{font-size:19px;font-weight:700}
 .rail figure{flex:none;width:72%;scroll-snap-align:center;background:var(--white);border-radius:var(--r-sm);padding:8px;box-shadow:var(--shadow);border:1px solid var(--line)}
 .rail figure img{border-radius:10px;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:top}
 .rail figcaption{font-size:12px;color:var(--muted);padding:8px 4px 2px;font-weight:700}
+/* creator videos: swipe row on phone, 3-column grid on desktop; tap opens a player */
+.ugc{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-left:20px;margin:0 -20px;padding:4px 20px 14px;scrollbar-width:none}
+.ugc::-webkit-scrollbar{display:none}
+.ugc-card{flex:none;width:44%;scroll-snap-align:start;position:relative;padding:0;border:0;background:none;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.ugc-card img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:14px;display:block;box-shadow:var(--shadow)}
+.ugc-card .play{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center;font-size:18px;padding-left:3px;backdrop-filter:blur(2px)}
+.ugc-card .cap{display:block;font-size:13px;font-weight:700;padding:8px 2px 0}
+.ugc-card:hover .play{background:rgba(0,0,0,.65)}
+.ugc-modal{position:fixed;inset:0;z-index:9999;background:rgba(5,10,18,.88);display:flex;align-items:center;justify-content:center;padding:16px}
+.ugc-modal[hidden]{display:none}
+.ugc-modal .box{position:relative;width:min(420px,100%);max-height:100%}
+.ugc-modal video{width:100%;max-height:calc(100vh - 40px);aspect-ratio:9/16;background:#000;border-radius:14px;display:block}
+.ugc-modal .x{position:absolute;top:-6px;right:-6px;z-index:2;width:38px;height:38px;border-radius:50%;border:0;background:#fff;color:#0f1b2a;font-size:18px;cursor:pointer;box-shadow:var(--shadow)}
+@media (min-width:700px){.ugc{display:grid;grid-template-columns:repeat(3,1fr);overflow:visible;margin:0;padding:4px 0 14px}.ugc-card{width:auto}}
 /* desktop controls for the testimonial rail: arrows + mouse drag */
 .rail-wrap{position:relative}
 .rail-nav{display:none;position:absolute;top:42%;z-index:2;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--white);color:var(--ink,#0f1b2a);font-size:28px;line-height:1;cursor:pointer;box-shadow:var(--shadow);align-items:center;justify-content:center;padding:0 0 3px}
@@ -621,6 +635,24 @@ body:not(.show-sticky) .wa-float{bottom:calc(20px + env(safe-area-inset-bottom,0
     <p class="small tc" style="margin-top:16px">*Setiap individu berbeza dan pengalaman pelanggan bukan jaminan hasil yang sama.</p>
   </section>
 
+  <!-- CREATOR VIDEOS -->
+  <section class="bg-white">
+    <p class="eyebrow">Tonton sendiri</p>
+    <h2>Video Daripada Pencipta Kandungan</h2>
+    <div class="ugc" id="ugc">
+      <button type="button" class="ugc-card" data-v="assets/videos/ugc-1.mp4"><img src="assets/videos/ugc-1.jpg" alt="Video pelanggan SYNAX 1" loading="lazy" width="360" height="640"><span class="play" aria-hidden="true">▶</span><span class="cap">Video Pelanggan</span></button>
+      <button type="button" class="ugc-card" data-v="assets/videos/ugc-2.mp4"><img src="assets/videos/ugc-2.jpg" alt="Video pelanggan SYNAX 2" loading="lazy" width="360" height="640"><span class="play" aria-hidden="true">▶</span><span class="cap">Video Pelanggan</span></button>
+      <button type="button" class="ugc-card" data-v="assets/videos/ugc-3.mp4"><img src="assets/videos/ugc-3.jpg" alt="Video pelanggan SYNAX 3" loading="lazy" width="360" height="640"><span class="play" aria-hidden="true">▶</span><span class="cap">Video Pelanggan</span></button>
+      <button type="button" class="ugc-card" data-v="assets/videos/ugc-4.mp4"><img src="assets/videos/ugc-4.jpg" alt="Video pelanggan SYNAX 4" loading="lazy" width="360" height="640"><span class="play" aria-hidden="true">▶</span><span class="cap">Video Pelanggan</span></button>
+      <button type="button" class="ugc-card" data-v="assets/videos/ugc-5.mp4"><img src="assets/videos/ugc-5.jpg" alt="Video pelanggan SYNAX 5" loading="lazy" width="360" height="640"><span class="play" aria-hidden="true">▶</span><span class="cap">Video Pelanggan</span></button>
+      <button type="button" class="ugc-card" data-v="assets/videos/ugc-6.mp4"><img src="assets/videos/ugc-6.jpg" alt="Video pelanggan SYNAX 6" loading="lazy" width="360" height="640"><span class="play" aria-hidden="true">▶</span><span class="cap">Video Pelanggan</span></button>
+    </div>
+    <p class="small tc"><span class="hint-touch">👆 Leret untuk lihat lagi · tekan untuk tonton</span><span class="hint-mouse">🎬 Klik video untuk tonton</span></p>
+  </section>
+  <div class="ugc-modal" id="ugc-modal" hidden role="dialog" aria-modal="true" aria-label="Video pelanggan">
+    <div class="box"><button type="button" class="x" id="ugc-x" aria-label="Tutup video">✕</button><video id="ugc-player" controls playsinline preload="none"></video></div>
+  </div>
+
   <!-- DOSAGE -->
   <section class="bg-white">
     <p class="eyebrow">Cara yang betul adalah kunci</p>
@@ -812,6 +844,20 @@ body:not(.show-sticky) .wa-float{bottom:calc(20px + env(safe-area-inset-bottom,0
 </div>
 
 <script>
+// Creator videos: open in a player overlay, stop and close on ✕, backdrop click or Esc
+(function(){
+  var m = document.getElementById('ugc-modal'), p = document.getElementById('ugc-player'), g = document.getElementById('ugc');
+  if (!m || !p || !g) return;
+  function close(){ p.pause(); p.removeAttribute('src'); p.load(); m.hidden = true; document.body.style.overflow = ''; }
+  g.addEventListener('click', function(e){
+    var c = e.target.closest('.ugc-card'); if (!c) return;
+    p.src = c.getAttribute('data-v'); p.poster = c.querySelector('img').src;
+    m.hidden = false; document.body.style.overflow = 'hidden';
+    var pr = p.play(); if (pr && pr.catch) pr.catch(function(){});  });
+  document.getElementById('ugc-x').addEventListener('click', close);
+  m.addEventListener('click', function(e){ if (e.target === m) close(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !m.hidden) close(); });
+})();
 // Sticky "Order Sekarang": kalau pelawat dah berada di borang, terus bawa ke maklumat penghantaran
 (function(){
   var b = document.getElementById('st-btn'), o = document.getElementById('order'), s = document.getElementById('step-ship');
