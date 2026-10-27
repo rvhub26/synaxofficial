@@ -67,6 +67,20 @@ p{color:var(--muted);line-height:1.6;margin-bottom:12px}
   var q = new URLSearchParams(location.search), cod = q.get('cod') === '1';
   var bill = q.get('billplz[id]') || (cod ? q.get('order') : '') || '', paid = cod || q.get('billplz[paid]') === 'true';
   var o = {}; try { o = JSON.parse(sessionStorage.getItem('synax_last_order') || '{}'); } catch(e) {}
+  // pelanggan yang bayar melalui app bank mungkin kembali dalam tab lain: guna salinan localStorage (maksimum 3 jam)
+  if (!o.id) { try { var l = JSON.parse(localStorage.getItem('synax_last_order') || '{}'); if (l.t && Date.now() - l.t < 3*3600*1000) o = l; } catch(e) {} }
+  // nilai Purchase = harga pakej (tanpa pos). Ikut keutamaan: URL ?v=, simpanan pesanan, nama pakej, jumlah ERP
+  var PRICE = {starter:10, b1:20, b2:40, b3:60, b5:80};
+  var NAMEP = [[/4\s*\+\s*1|5 botol/i,80],[/3 botol/i,60],[/2 botol/i,40],[/1 botol/i,20],[/percubaan|starter/i,10]];
+  function purchaseValue(){
+    var v = parseFloat(q.get('v')); if (v > 0) return v;
+    if (PRICE[q.get('p')]) return PRICE[q.get('p')];
+    if (o.value > 0) return o.value;
+    if (PRICE[o.pkg]) return PRICE[o.pkg];
+    for (var i = 0; i < NAMEP.length; i++) if (NAMEP[i][0].test(o.pakej || '')) return NAMEP[i][1];
+    if (typeof o.amount === 'number' && o.amount > 0) return o.amount > 500 ? o.amount / 100 : o.amount;
+    return 0;
+  }
   document.getElementById(paid ? 'ok' : 'bad').hidden = false;
   if (!paid) return;
   document.getElementById('nm').textContent = cod ? 'pesanan COD diterima' : 'pembayaran berjaya';
@@ -82,8 +96,9 @@ p{color:var(--muted);line-height:1.6;margin-bottom:12px}
   try {
     var key = 'px_' + (bill || o.id);
     if (window.fbq && !localStorage.getItem(key)) {
-      var v = typeof o.amount === 'number' ? (o.amount > 500 ? o.amount / 100 : o.amount) : 0;
-      fbq('track', 'Purchase', {value: v, currency: 'MYR', content_name: 'SYNAX ' + (o.pakej || '')});
+      var v = purchaseValue(), data = {currency: 'MYR', content_name: 'SYNAX ' + (o.pakej || ''), content_type: 'product'};
+      if (v > 0) data.value = v;   // jangan hantar value 0 (punca amaran "value diagnostic")
+      fbq('track', 'Purchase', data);
       localStorage.setItem(key, '1');
     }
   } catch(e) {}

@@ -1228,16 +1228,20 @@ body:not(.show-sticky) .wa-float{bottom:calc(20px + env(safe-area-inset-bottom,0
     fetch(ERP, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})
       .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ return {ok: r.ok, j: j}; }); })
       .then(function(x){
+        // value = harga pakej (tanpa pos), disimpan di session + local supaya tetap ada walau pelanggan kembali dari app bank dalam tab lain
+        function keep(o){ o.value = PRICE[p] || 0; o.pkg = p; o.t = Date.now(); var s = JSON.stringify(o);
+          try { sessionStorage.setItem('synax_last_order', s); } catch(e) {}
+          try { localStorage.setItem('synax_last_order', s); } catch(e) {} }
         if (x.ok && x.j.payment_url) {
-          try { sessionStorage.setItem('synax_last_order', JSON.stringify({id: x.j.pending_id, amount: x.j.amount, pakej: pakej})); } catch(e) {}
+          keep({id: x.j.pending_id, amount: x.j.amount, pakej: pakej});
           location.href = x.j.payment_url; return;
         }
         // COD: ERP pulangkan order_id (terus jadi order) atau pending_id + status "received" (menunggu semakan admin)
         var codId = x.j.order_id || x.j.pending_id;
         if (x.ok && codId) {
           var amt = typeof x.j.amount === 'number' ? x.j.amount : (PRICE[p] || 0);
-          try { sessionStorage.setItem('synax_last_order', JSON.stringify({id: codId, amount: amt, withShip: typeof x.j.amount === 'number', pakej: pakej, cod: true})); } catch(e) {}
-          location.href = THANKS + '?cod=1&order=' + encodeURIComponent(codId); return;
+          keep({id: codId, amount: amt, withShip: typeof x.j.amount === 'number', pakej: pakej, cod: true});
+          location.href = THANKS + '?cod=1&order=' + encodeURIComponent(codId) + '&v=' + (PRICE[p] || 0) + '&p=' + p; return;
         }
         throw new Error(x.j.error || 'Gagal sambung ke sistem pesanan.');
       })
