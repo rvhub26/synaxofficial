@@ -36,6 +36,7 @@ p{color:var(--muted);line-height:1.6;margin-bottom:12px}
 .wa{background:var(--wa);color:#05361a}
 .gold{background:linear-gradient(180deg,#ffe07a,var(--gold) 45%,var(--gold2));color:var(--navy)}
 .logo{width:56px;height:56px;border-radius:14px;margin:0 auto 18px;display:block}
+.wa-note{font-size:14px;margin:10px 0 0}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -59,6 +60,7 @@ p{color:var(--muted);line-height:1.6;margin-bottom:12px}
     <a class="btn gold" href="/#order">Cuba Bayar Semula</a>
   </section>
   <a class="btn wa" id="wa" href="https://wa.me/60199255044" target="_blank" rel="noopener">💬 WhatsApp Kami</a>
+  <p class="wa-note" id="wa-note" hidden>Tekan butang di atas, kemudian tekan <b>Send</b> di WhatsApp supaya kami boleh proses pesanan anda dengan lebih cepat.</p>
 </main>
 <script>
 (function(){
@@ -91,7 +93,23 @@ p{color:var(--muted);line-height:1.6;margin-bottom:12px}
   document.getElementById('oid').textContent = o.id ? ('#' + o.id) : (bill || '-');
   document.getElementById('opk').textContent = (o.pakej || '').replace(/^·\s*/, '') || 'SYNAX';
   document.getElementById('oam').textContent = typeof o.amount === 'number' ? 'RM' + (o.amount > 500 ? (o.amount / 100).toFixed(2) : o.amount) : '-';
-  document.getElementById('wa').href = 'https://wa.me/60199255044?text=' + encodeURIComponent('Hi SYNAX, saya dah bayar online. No. bil: ' + bill + (o.id ? ' / order #' + o.id : '') + '.');
+  // butang WhatsApp dengan butiran order siap diisi (order dah pun masuk ERP sebelum sampai ke sini)
+  var amt = document.getElementById('oam').textContent;
+  var lines = ['Hi SYNAX, saya dah buat pesanan di website.', '',
+    '🧾 No. order: ' + (o.id ? '#' + o.id : (bill || '-')),
+    '📦 Pakej: ' + document.getElementById('opk').textContent,
+    '💳 Bayaran: ' + (cod ? 'COD (bayar bila barang sampai)' : 'Online, dah bayar' + (bill ? ' (bil ' + bill + ')' : '')),
+    '💰 Jumlah: ' + amt + (cod && !o.withShip ? ' (belum termasuk pos)' : '')];
+  if (o.nama) lines.push('👤 Nama: ' + o.nama);
+  if (o.tel) lines.push('📞 Telefon: ' + o.tel);
+  if (o.alamat) lines.push('🏠 Alamat: ' + o.alamat);
+  lines.push('', 'Mohon sahkan pesanan saya. Terima kasih!');
+  var wa = document.getElementById('wa');
+  wa.href = 'https://wa.me/60199255044?text=' + encodeURIComponent(lines.join('\n'));
+  wa.textContent = '💬 Sahkan Pesanan di WhatsApp';
+  document.getElementById('wa-note').hidden = false;
+  // butiran peribadi tak perlu kekal dalam localStorage selepas digunakan
+  try { var ls = JSON.parse(localStorage.getItem('synax_last_order') || '{}'); delete ls.nama; delete ls.tel; delete ls.alamat; localStorage.setItem('synax_last_order', JSON.stringify(ls)); } catch(e) {}
   // Purchase hanya sekali bagi setiap bil
   try {
     var key = 'px_' + (bill || o.id);
